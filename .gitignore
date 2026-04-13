@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.env
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (so large files don't get pushed to GitHub)
+data/raw/*.csv
+data/processed/*.csv
+
+# VS Code
+.vscode/
