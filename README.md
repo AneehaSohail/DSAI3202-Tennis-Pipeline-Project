@@ -1,7 +1,7 @@
 # DSAI3202 - Phase 1: ATP Tennis Data Pipeline
 
-**Course:** DSAI3202 - Parallel and Distributed Computing for AI  
-**University:** University of Doha for Science and Technology  
+**Course:** DSAI3202 - Cloud Computing  
+
 **Team Members:**
 - Aneeha Sohail - 60105845
 - Laiba Furqan - 60301575
