@@ -1,0 +1,124 @@
+# DSAI3202 - Phase 2: Modeling, Validation, and Deployment
+
+## II.1 Model Development
+
+**Problem Type:** Binary Classification (predict match winner)  
+**Baseline Model:** Logistic Regression  
+**Advanced Models:** Random Forest, Gradient Boosted Trees (GBT)
+
+### Model Justification
+| Model | Reason |
+|-------|--------|
+| Logistic Regression | Simple baseline, interpretable, fast to train |
+| Random Forest | Handles non-linear relationships, robust to outliers |
+| GBT (selected) | Best performance, handles feature interactions well |
+
+### Training Configuration
+- **Train/Test Split:** 80/20 (seed=42 for reproducibility)
+- **Training records:** 53,810
+- **Testing records:** 13,623
+- **Random seed:** 42
+- **Framework:** PySpark MLlib on Azure Databricks
+
+---
+
+## II.2 Model Validation
+
+### Evaluation Metrics
+| Model | AUC | Accuracy | Precision | Recall | F1 |
+|-------|-----|----------|-----------|--------|----|
+| Logistic Regression (baseline) | 0.7581 | 68.71% | - | - | - |
+| Random Forest | 0.7551 | 69.07% | - | - | - |
+| **GBT (best)** | **0.7619** | **69.13%** | **0.6958** | **0.6686** | **0.6819** |
+
+### Confusion Matrix (GBT)
+| | Predicted P1 Wins | Predicted P2 Wins |
+|---|---|---|
+| **Actual P1 Wins** | 4509 (TP) | 2235 (FN) |
+| **Actual P2 Wins** | 1971 (FP) | 4908 (TN) |
+
+### Validation Strategy
+- Temporal split avoided to prevent data leakage
+- 80/20 random split with fixed seed (42)
+- Evaluated on held-out test set only
+- Compared against logistic regression baseline
+
+### Error Analysis
+- Model struggles with close matches (similar rankings)
+- Performs well when rank difference is large
+- Betting odds are strongest predictor of outcome
+
+---
+
+## II.3 Model Versioning and Registration
+
+| Attribute | Value |
+|-----------|-------|
+| Model name | GBT Tennis Winner Predictor |
+| Version | v1.0 |
+| Training data | atp_tennis_features (v1.0) |
+| Features | 12 engineered features |
+| AUC | 0.7619 |
+| Accuracy | 69.13% |
+| Tracked in | MLflow (Databricks) |
+| Saved path | abfss://curated@tennisdatalake60105845.dfs.core.windows.net/models/gbt_tennis_v1 |
+| Git tag | v1.0 |
+
+---
+
+## II.4 Deployment
+
+**Serving Mode:** Batch Deployment  
+**Notebook:** `06_batch_deployment.ipynb`
+
+### Deployment Configuration
+- Model loaded from Azure Data Lake curated zone
+- Input: 12 features (rank_diff, pts_diff, odds_diff, etc.)
+- Output: prediction (0=Player2 wins, 1=Player1 wins)
+- Batch scored 67,433 records
+- Results saved to: `abfss://curated@tennisdatalake60105845.dfs.core.windows.net/predictions/batch_v1/`
+
+### Input/Output Interface
+| Input Feature | Type | Description |
+|---------------|------|-------------|
+| rank_diff | Integer | Rank_1 - Rank_2 |
+| pts_diff | Integer | Points_1 - Points_2 |
+| odds_diff | Double | Odd_1 - Odd_2 |
+| p1_higher_ranked | Binary | 1 if Rank_1 < Rank_2 |
+| is_grand_slam | Binary | 1 if Grand Slam |
+| is_hard_court | Binary | 1 if Hard surface |
+| is_clay_court | Binary | 1 if Clay surface |
+| is_best_of_5 | Binary | 1 if Best of 5 sets |
+| Rank_1 | Integer | Player 1 ATP rank |
+| Rank_2 | Integer | Player 2 ATP rank |
+| year | Integer | Match year |
+| month | Integer | Match month |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| prediction | Double | 0.0=P2 wins, 1.0=P1 wins |
+
+---
+
+## II.5 Deployment Validation
+
+### Sanity Checks
+| Test Case | Expected | Actual | Result |
+|-----------|----------|--------|--------|
+| Rank 1 vs Rank 100 (Grand Slam) | P1 wins | P1 wins | ✅ |
+| Rank 200 vs Rank 5 | P2 wins | P2 wins | ✅ |
+| Equal players (Rank 50 vs 52) | Either | P2 wins | ✅ |
+
+### Full Dataset Results
+- **Total predictions:** 67,433
+- **Correct predictions:** 46,943
+- **Full dataset accuracy:** 69.61%
+- **Consistency:** Offline and batch predictions match ✅
+
+---
+
+## Phase 2 Notebooks
+| Notebook | Description |
+|----------|-------------|
+| 05_model_training.ipynb | Train LR, RF, GBT + MLflow logging |
+| 06_batch_deployment.ipynb | Load model + batch predictions |
